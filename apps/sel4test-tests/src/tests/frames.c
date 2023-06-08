@@ -371,3 +371,49 @@ static int test_unmap_on_delete(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(FRAMEDIPC0003, "Test that deleting a frame cap unmaps the frame", test_unmap_on_delete, true)
+
+
+#ifdef CONFIG_ARCH_RISCV
+/*
+ * This test shows mapping in the CLINT (tested on HiFive Unleahsed) and then accessing
+ * the `mtime` register, and successfully reading and writing to it.
+ */
+static int
+test_clint_access(env_t env)
+{
+    vka_object_t frame;
+
+    void *vaddr;
+    reservation_t reservation;
+
+    /* We want an uncached region since it the CLINT is device memory */
+    reservation = vspace_reserve_range_aligned(&env->vspace,
+                                       1 << seL4_LargePageBits, seL4_LargePageBits, seL4_AllRights, 0, &vaddr);
+    test_assert(reservation.res);
+
+    /* The CLINT, at least on the HiFive Unleashed is located at 0x0200_0000 */
+    int err = vka_alloc_frame_at(&env->vka, seL4_LargePageBits, 0x2000000, &frame);
+    test_assert(!err);
+
+    /* Map the frame where the CLINT is into our adddress space */
+    err = vspace_map_pages_at_vaddr(&env->vspace, &frame.cptr, NULL, vaddr, 1, seL4_LargePageBits, reservation);
+    test_assert(!err);
+
+    /* Get the location of the memory-mapped `mtime` register */
+    uint64_t mtime_addr = (uint64_t)vaddr + 0xbff8;
+
+    /* Print it out a bunch to see if the value is sane. */
+    for (int i = 0; i < 2000; i++) {
+        printf("mtime: 0x%lx\n", *((volatile uint64_t *)mtime_addr));
+    }
+
+    /* Reset `mtime` to see if it's possible and read it back a bunch to see if we have actually reset it. */
+    *((volatile uint64_t *)mtime_addr) = 0;
+    for (int i = 0; i < 2000; i++) {
+        printf("mtime after reset: 0x%lx\n", *((volatile uint64_t *)mtime_addr));
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(CLINTACCESS, "Test access to CLINT", test_clint_access, true)
+#endif
