@@ -311,3 +311,48 @@ test_dirty_accessed_bits(env_t env)
 }
 DEFINE_TEST(VSPACE0010, "Test dirty and accessed bits on mappings", test_dirty_accessed_bits, true)
 #endif
+
+#ifdef CONFIG_ARCH_RISCV
+static int
+test_write_only_mappings(env_t env)
+{
+    seL4_CPtr frame;
+    uintptr_t vstart;
+    vka_t *vka;
+    int err;
+
+    vka = &env->vka;
+
+    void *vaddr;
+    reservation_t reservation;
+
+    reservation = vspace_reserve_range(&env->vspace,
+                                       PAGE_SIZE_4K, seL4_CanWrite, 1, &vaddr);
+    assert(reservation.res);
+
+    vstart = (uintptr_t)vaddr;
+    assert(IS_ALIGNED(vstart, seL4_PageBits));
+
+    /* Create a frame */
+    frame = vka_alloc_frame_leaky(vka, PAGE_BITS_4K);
+    test_assert(frame != seL4_CapNull);
+
+    /* Map in the frame */
+    err = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
+    test_error_eq(err, seL4_NoError);
+
+    printf("SEL4TEST: vaddr is 0x%lx\n", vaddr);
+
+    /* Check that we can read to the page, although we shouldn't be able to. */
+    // char *x = (char *) vaddr;
+    // printf("value at x is: 0x%lx\n", *x);
+
+    /* We should be able to write to the page, although we will fault instead */
+    printf("SEL4TEST: attempting to write\n");
+    *((char *)vaddr) = 3;
+    printf("SEL4TEST: written\n");
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(VSPACE0015, "Test write-only mappings", test_write_only_mappings, true)
+#endif
