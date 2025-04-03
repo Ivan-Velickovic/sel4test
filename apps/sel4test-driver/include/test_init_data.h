@@ -69,6 +69,11 @@ typedef struct {
     seL4_CPtr smc;
 #endif /* CONFIG_ALLOW_SMC_CALLS */
 
+#ifdef CONFIG_ALLOW_SBI_CALLS
+    /* SBI cap */
+    seL4_CPtr sbi;
+#endif /* CONFIG_ALLOW_SBI_CALLS */
+
     /* device frame cap */
     seL4_CPtr device_frame_cap;
 

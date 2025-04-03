@@ -232,6 +232,11 @@ void basic_set_up(uintptr_t e)
                                                                                                         seL4_CapSMC));
 #endif /* CONFIG_ALLOW_SMC_CALLS */
 
+#ifdef CONFIG_ALLOW_SBI_CALLS
+    env->init->sbi = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple,
+                                                                                                        seL4_CapSBI));
+#endif /* CONFIG_ALLOW_SBI_CALLS */
+
     /* setup data about untypeds */
     env->init->untypeds = copy_untypeds_to_process(&(env->test_process), env->untypeds, env->num_untypeds, env);
     /* copy the fault endpoint - we wait on the endpoint for a message

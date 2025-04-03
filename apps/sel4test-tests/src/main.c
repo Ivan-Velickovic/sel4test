@@ -201,6 +201,9 @@ int main(int argc, char **argv)
 #ifdef CONFIG_ALLOW_SMC_CALLS
     env.smc = init_data->smc;
 #endif
+#ifdef CONFIG_ALLOW_SBI_CALLS
+    env.sbi = init_data->sbi;
+#endif
 #ifdef CONFIG_IOMMU
     env.io_space = init_data->io_space;
 #endif
